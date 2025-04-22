@@ -1,7 +1,9 @@
-// src/app/(auth)/login/page.tsx
-'use client'; // Mark as a Client Component because it will have interactions
+'use client';
 
+import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { account } from "@/lib/appwrite";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,11 +17,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
-  // We'll add state and handlers in Day 2
-  const handleLogin = (event: React.FormEvent) => {
+  const router = useRouter();
+  const [formState, setFormState] = useState({
+    email: '',
+    password: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const updateField = (field: keyof typeof formState) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setFormState({ ...formState, [field]: e.target.value });
+  };
+
+  const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
-    console.log('Login attempt (logic to be added)');
-    // TODO: Implement Appwrite login logic
+    
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    setError(null);
+    
+    const { email, password } = formState;
+
+    try {
+      // Attempt to login with Appwrite
+      await account.createEmailPasswordSession(email, password);
+      console.log('✅ Login successful');
+      
+      // Redirect to dashboard after successful login
+      router.push('/dashboard');
+    } catch (error: any) {
+      setError(error.message || 'Login failed. Please check your credentials.');
+      console.error('❌ Login error:', error.message || error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -29,27 +63,51 @@ export default function LoginPage() {
         <CardDescription>
           Enter your email below to login to your account.
         </CardDescription>
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </CardHeader>
       <form onSubmit={handleLogin}>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <Input 
+              id="email" 
+              type="email" 
+              placeholder="m@example.com" 
+              value={formState.email}
+              onChange={updateField('email')}
+              required 
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
+            <Input 
+              id="password" 
+              type="password" 
+              value={formState.password}
+              onChange={updateField('password')}
+              required 
+            />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
-          <Button type="submit" className="w-full">Sign in</Button>
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
+          </Button>
           <div className="mt-4 text-center text-sm">
             Don't have an account?{" "}
             <Link href="/register" className="underline">
               Sign up
             </Link>
           </div>
-           {/* TODO: Add Forgot Password Link later */}
+          <div className="mt-2 text-center text-sm">
+            <Link href="/forgot-password" className="text-gray-500 hover:text-gray-700">
+              Forgot password?
+            </Link>
+          </div>
         </CardFooter>
       </form>
     </Card>
