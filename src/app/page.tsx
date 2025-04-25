@@ -1,19 +1,25 @@
-import Image from "next/image";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import Hero from "@/components/sections/Hero";
+import Features from "@/components/sections/Features";
+import HowItWorks from "@/components/sections/HowItWorks";
+import TestCategories from "@/components/sections/TestCategories";
+import Stats from "@/components/sections/Stats";
+import Testimonials from "@/components/sections/Testimonials";
+import Cta from "@/components/sections/Cta";
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center bg-gray-800 min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-      </main>
-      
-    </div>
+    <main className="min-h-screen">
+      <Header />
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <TestCategories />
+      <Stats />
+      <Testimonials />
+      <Cta />
+      <Footer />
+    </main>
   );
 }
