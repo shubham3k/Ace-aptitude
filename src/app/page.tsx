@@ -1,25 +1,16 @@
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import Hero from "@/components/sections/Hero";
-import Features from "@/components/sections/Features";
-import HowItWorks from "@/components/sections/HowItWorks";
-import TestCategories from "@/components/sections/TestCategories";
-import Stats from "@/components/sections/Stats";
-import Testimonials from "@/components/sections/Testimonials";
-import Cta from "@/components/sections/Cta";
-
-export default function Home() {
+export default function LandingPage() {
   return (
-    <main className="min-h-screen">
-      <Header />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <TestCategories />
-      <Stats />
-      <Testimonials />
-      <Cta />
-      <Footer />
-    </main>
+    <div>
+      <h1 className="text-4xl font-bold mb-4">Welcome to the Aptitude Practice Platform!</h1>
+      <p className="mb-6">Sharpen your skills for quantitative, logical, and verbal reasoning.</p>
+      {/* Add Link components from next/link later for navigation */}
+      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+        Sign Up
+      </button>
+      <button className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+        Login
+      </button>
+      {/* Placeholder content - Hero, Features etc. will replace this */}
+    </div>
   );
 }
