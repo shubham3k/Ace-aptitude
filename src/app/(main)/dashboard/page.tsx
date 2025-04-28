@@ -1,32 +1,50 @@
-// This can be a Server Component initially if just displaying static text,
-// or make it 'use client' if you need hooks immediately (e.g., to display user name from useAuth)
+import { databases, DB_ID, TOPICS_COLLECTION_ID } from '@/lib/appwrite';
+import { TopicCard } from '@/components/features/dashboard/topicCard'; // We'll create this next
+import { Topic } from '@/types'; // Import the Topic type
+import { Query } from 'appwrite'; // Import Query for sorting/filtering
 
-// Example as a basic Server Component:
-export default function DashboardPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <p>Welcome to your practice platform dashboard!</p>
-      <p>Topic cards and other features will appear here.</p>
-      {/* You could make this 'use client' and use useAuth() to display user.name */}
-    </div>
-  );
+// Server-side function to fetch topics
+async function getTopics(): Promise<Topic[]> {
+    console.log(`Fetching topics from DB: ${DB_ID}, Collection: ${TOPICS_COLLECTION_ID}`);
+    try {
+        const response = await databases.listDocuments<Topic>(
+            DB_ID,
+            TOPICS_COLLECTION_ID,
+            [
+                // Optional: Add queries like sorting if you have an 'order' attribute
+                // Query.orderAsc('order'),
+                Query.orderAsc('name') // Sort alphabetically by name as a default
+            ]
+        );
+        console.log(`Fetched ${response.documents.length} topics.`);
+        return response.documents;
+    } catch (error) {
+        console.error("Failed to fetch topics:", error);
+        // In a real app, you might want more robust error handling here
+        // For now, return empty array on error
+        return [];
+    }
 }
 
-/*
-// Example as a Client Component using useAuth:
-'use client';
-import { useAuth } from '@/contexts/AuthContext';
+// The Dashboard Page Component (Async Server Component)
+export default async function DashboardPage() {
+    // Fetch topics directly within the Server Component
+    const topics = await getTopics();
 
-export default function DashboardPage() {
-  const { user } = useAuth(); // Get user from context
+    return (
+        <div>
+            <h1 className="text-3xl font-bold mb-6 text-gray-800">Explore Topics</h1>
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      {user && <p className="mb-4">Welcome back, {user.name || user.email}!</p>}
-      <p>Topic cards and other features will appear here.</p>
-    </div>
-  );
+            {topics.length === 0 ? (
+                <p className="text-gray-600">No topics available at the moment. Check back later!</p>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {topics.map((topic) => (
+                        // Render the TopicCard component for each topic
+                        <TopicCard key={topic.$id} topic={topic} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
-*/
