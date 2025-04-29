@@ -32,7 +32,8 @@ export default function ExamPage() {
   useEffect(() => {
     if (!testId) return; // Don't fetch if testId isn't available yet
 
-    startLoading(); // Set loading state in store
+    startLoading();
+    console.log('Fetching exam data for test:', testId);
 
     const fetchExamData = async () => {
       try {
@@ -42,18 +43,27 @@ export default function ExamPage() {
           TESTS_COLLECTION_ID,
           testId
         );
+        console.log('Fetched test details:', fetchedTestDetails);
 
         if (!fetchedTestDetails || !fetchedTestDetails.isEnabled) {
-            throw new Error("Test not found or is disabled.");
+          throw new Error("Test not found or is disabled.");
         }
 
         const questionIds = fetchedTestDetails.questionIds;
-        if (!questionIds || questionIds.length === 0) {
+                if (!questionIds || questionIds.length === 0) {
           throw new Error("This test has no questions assigned.");
         }
 
         // 2. Fetch Questions based on IDs
-        // Appwrite Query Limitation: Query.equal('$id', array) works reliably for up to 100 IDs.
+// Appwrite Query Limitation: Query.equal('$id', array) works reliably for up to 100 IDs.
+        // TODO: Implement batching or alternative if > 100 questions needed.
+        if (questionIds.length > 100) {
+            console.warn("Test has more than 100 questions. Fetching only the first 100. Implement batching for full support.");
+            // Optionally throw an error or fetch only the first 100 for now
+            // throw new Error("Tests with more than 100 questions are not fully supported yet.");
+        }
+
+// Appwrite Query Limitation: Query.equal('$id', array) works reliably for up to 100 IDs.
         // TODO: Implement batching or alternative if > 100 questions needed.
         if (questionIds.length > 100) {
             console.warn("Test has more than 100 questions. Fetching only the first 100. Implement batching for full support.");
@@ -62,36 +72,38 @@ export default function ExamPage() {
         }
 
         const fetchedQuestions = await databases.listDocuments<Question>(
-            DB_ID,
-            QUESTIONS_COLLECTION_ID,
-            [
-                Query.equal('$id', questionIds.slice(0, 100)), // Fetch questions matching the IDs (up to 100)
-                Query.limit(100) // Explicitly limit to 100
-            ]
+          DB_ID,
+          QUESTIONS_COLLECTION_ID,
+          [
+            Query.equal('$id', questionIds),
+            Query.limit(100)
+          ]
         );
+        console.log('Fetched questions:', fetchedQuestions.documents);
 
-         // Optional: Verify fetched questions count matches expected (or handle discrepancies)
-         if (fetchedQuestions.documents.length !== Math.min(questionIds.length, 100)) {
-             console.warn("Mismatch between requested question IDs and fetched questions.");
-             // Handle this case - maybe some IDs were invalid?
-         }
-         // Optional: Ensure questions are in the order specified in test.questionIds if needed
-         // This requires sorting the fetchedQuestions based on the original questionIds array index
+        // Ensure questions are in the same order as questionIds
+        const orderedQuestions = questionIds
+          .map(id => fetchedQuestions.documents.find(q => q.$id === id))
+          .filter((q): q is Question => q !== undefined);
+        
+        console.log('Ordered questions:', orderedQuestions);
 
         // 3. Update the Zustand store with fetched data
-        startExam(fetchedTestDetails, fetchedQuestions.documents);
+        startExam(fetchedTestDetails, orderedQuestions);
 
       } catch (err: any) {
         console.error("Failed to fetch exam data:", err);
-        setError(err.message || "Failed to load the exam.");
-        // Optionally redirect user away if exam fails to load
+        setError(err.message || "Failed to load the exam.")// Optionally redirect user away if exam fails to load
+        // router.push('/dashboard?error=exam_load_failed');
+;
+// Optionally redirect user away if exam fails to load
         // router.push('/dashboard?error=exam_load_failed');
       }
     };
 
     fetchExamData();
 
-    // Cleanup function to reset state when leaving the exam page
+// Cleanup function to reset state when leaving the exam page
     return () => {
       resetExamState();
     };
