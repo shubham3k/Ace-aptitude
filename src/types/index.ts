@@ -21,4 +21,19 @@ export interface Test extends Models.Document {
   // Add any other attributes you defined for the 'tests' collection
 }
 
-// Add Question, Attempt types later...
+
+
+
+
+// --- NEW: Question interface ---
+export interface Question extends Models.Document {
+  text: string;           // The question text (can include markdown/HTML)
+  options: string[];      // Array of possible answer strings
+  correctOptionIndex: number; // 0-based index of the correct answer in options
+  explanation?: string;   // Optional explanation
+  topicId: string;        // Associated topic ID (for organization/filtering)
+  difficulty?: 'easy' | 'medium' | 'hard' | string;
+  // Add any other attributes you defined for the 'questions' collection
+}
+
+// Add Attempt types later...

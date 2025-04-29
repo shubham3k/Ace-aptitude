@@ -1,68 +1,102 @@
+'use client'; // <<<<----- ADD THIS LINE -----
+
 import { databases, DB_ID, TESTS_COLLECTION_ID } from '@/lib/appwrite';
 import { Test } from '@/types';
-import { notFound } from 'next/navigation';
-import Link from 'next/link'; // For potential back button
+import { notFound, useRouter } from 'next/navigation'; // <<-- Import useRouter
+import Link from 'next/link';
+import { useEffect, useState } from 'react'; // <<-- Import useEffect, useState for client-side fetch
+import { useExamStore } from '@/store/examStore'; // <<-- Import Zustand store hook
 
 interface TestStartPageProps {
   params: {
-    testId: string; // The dynamic segment from the URL ([testId])
+    testId: string;
   };
 }
 
-// Server-side function to fetch a single test by its ID
-async function getTestById(testId: string): Promise<Test | null> {
-  console.log(`Fetching test with ID: ${testId}`);
-  try {
-    const testDocument = await databases.getDocument<Test>(
-      DB_ID,
-      TESTS_COLLECTION_ID,
-      testId // Use the ID directly with getDocument
-    );
-    console.log(`Found test: ${testDocument.name}`);
-    return testDocument;
-  } catch (error: any) {
-    // Appwrite throws specific errors, check for 404
-    if (error.code === 404) {
-      console.log(`Test with ID "${testId}" not found.`);
-    } else {
-      console.error(`Failed to fetch test with ID "${testId}":`, error);
-    }
-    return null; // Return null if not found or on other errors
-  }
-}
+// NOTE: Fetching logic now moves to client-side useEffect
+// because page is 'use client' for the button's onClick
 
-// The Test Start Page Component (Async Server Component)
-export default async function TestStartPage({ params }: TestStartPageProps) {
+export default function TestStartPage({ params }: TestStartPageProps) {
   const { testId } = params;
-  const test = await getTestById(testId);
+  const router = useRouter(); // <<-- Get router instance
+  const [test, setTest] = useState<Test | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const resetExamState = useExamStore((state) => state.resetExamState); // Get reset action
+
+  useEffect(() => {
+    // Reset any previous exam state when entering this page
+    resetExamState();
+
+    const fetchTest = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const testDocument = await databases.getDocument<Test>(
+              DB_ID,
+              TESTS_COLLECTION_ID,
+              testId
+            );
+            if (!testDocument.isEnabled) {
+               setError("This test is currently disabled.");
+               setTest(null); // Ensure test is null if disabled
+            } else {
+               setTest(testDocument);
+            }
+        } catch (err: any) {
+            if (err.code === 404) {
+                setError("Test not found.");
+                // Optionally call notFound() here, but requires careful handling in client components
+                // For simplicity, we'll show an error message.
+            } else {
+                console.error(`Failed to fetch test:`, err);
+                setError("Failed to load test details.");
+            }
+             setTest(null); // Ensure test is null on error
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchTest();
+  }, [testId, resetExamState]); // Depend on testId and the reset action
+
+  const handleStartTest = () => {
+    if (test) {
+      // Optional: Could pre-load questions here or let the exam page handle it
+      console.log(`Starting test: ${test.name} (${test.$id})`);
+      router.push(`/exam/${test.$id}`); // Navigate to the exam page
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center p-10">Loading test details...</div>;
+  }
+
+  if (error) {
+     // Display error prominently - consider a dedicated error component
+      return (
+        <div className="max-w-2xl mx-auto text-center p-10 bg-red-100 border border-red-400 text-red-700 rounded">
+            <h2 className="text-xl font-bold mb-2">Error</h2>
+            <p>{error}</p>
+            {/* Add a button to go back or to dashboard */}
+        </div>
+      );
+  }
 
   if (!test) {
-    notFound(); // Test ID is invalid or test doesn't exist
+     // Should ideally be caught by error state, but as a fallback:
+     return <div className="text-center p-10">Test data could not be loaded.</div>;
   }
 
-  // Ensure isEnabled is checked server-side as well (belt-and-suspenders)
-  if (!test.isEnabled) {
-      console.log(`Attempted to access disabled test: ${testId}`);
-      // Decide how to handle - show "not available" or 404? Let's use 404 for simplicity.
-      notFound();
-  }
 
+  // --- JSX from Day 4, but now uses client-side 'test' state ---
   const numberOfQuestions = test.questionIds?.length || 0;
-
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Optional: Breadcrumb or back link */}
-      {/* <Link href={`/topics/???`} className="text-blue-600 hover:underline mb-4 inline-block">← Back to Topic</Link> */}
-      {/* Note: Getting back to the specific topic page requires knowing the topic slug, which isn't directly on the test object. */}
-      {/* You might need to fetch the topic data as well if you want an accurate back link. */}
-
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">{test.name}</h1>
-        {test.description && (
-          <p className="text-base text-gray-600 mb-6">{test.description}</p>
-        )}
-
-        <div className="grid grid-cols-2 gap-4 mb-8 text-center">
+        {/* ... (rest of the test details display: description, grid for Qs/Duration) ... */}
+         <div className="grid grid-cols-2 gap-4 mb-8 text-center">
           <div className="bg-blue-50 p-4 rounded">
             <p className="text-sm font-medium text-blue-700">Questions</p>
             <p className="text-2xl font-semibold text-blue-900">{numberOfQuestions}</p>
@@ -74,13 +108,15 @@ export default async function TestStartPage({ params }: TestStartPageProps) {
         </div>
 
         <div className="text-center">
-          {/* This button will trigger the exam start logic on Day 5 */}
           <button
-             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-200"
-             // onClick handler will be added later
+             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+             onClick={handleStartTest} // <<-- ADD onClick HANDLER
+             disabled={!test || numberOfQuestions === 0} // <<-- Disable if no test or no questions
+             title={numberOfQuestions === 0 ? "This test has no questions configured." : "Start the test"}
            >
              Start Test
           </button>
+          {numberOfQuestions === 0 && <p className="text-sm text-red-600 mt-2">Cannot start: Test has no questions.</p>}
         </div>
       </div>
     </div>
