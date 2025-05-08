@@ -93,7 +93,7 @@ export default function TestStartPage({ params }: TestStartPageProps) {
   const numberOfQuestions = test.questionIds?.length || 0;
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white p-6 sm:p-8 rounded-lg shadow">
+      <div className="bg-white p-5 sm:p-8 rounded-lg shadow">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">{test.name}</h1>
         {/* ... (rest of the test details display: description, grid for Qs/Duration) ... */}
          <div className="grid grid-cols-2 gap-4 mb-8 text-center">
@@ -116,7 +116,7 @@ export default function TestStartPage({ params }: TestStartPageProps) {
            >
              Start Test
           </button>
-          {numberOfQuestions === 0 && <p className="text-sm text-red-600 mt-2">Cannot start: Test has no questions.</p>}
+          {numberOfQuestions === 0 && <p className="text-sm text-red-500 mt-2">Cannot start: Test has no questions.</p>}
         </div>
       </div>
     </div>
