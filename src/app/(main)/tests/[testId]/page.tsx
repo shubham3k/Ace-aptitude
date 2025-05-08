@@ -18,7 +18,7 @@ interface TestStartPageProps {
 
 export default function TestStartPage({ params }: TestStartPageProps) {
   const { testId } = params;
-  const router = useRouter(); // <<-- Get router instance
+  const router = useRouter(); 
   const [test, setTest] = useState<Test | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export default function TestStartPage({ params }: TestStartPageProps) {
               testId
             );
             if (!testDocument.isEnabled) {
-               setError("This test is currently disabled.");
+               setError("This test is currently cannot be accesed.");
                setTest(null); // Ensure test is null if disabled
             } else {
                setTest(testDocument);
@@ -50,7 +50,7 @@ export default function TestStartPage({ params }: TestStartPageProps) {
                 // For simplicity, we'll show an error message.
             } else {
                 console.error(`Failed to fetch test:`, err);
-                setError("Failed to load test details.");
+                setError("Failed to load test data.");
             }
              setTest(null); // Ensure test is null on error
         } finally {
